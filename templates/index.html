@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastTrack - Premium Courier Services</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('home') }}" class="logo">
+                <i class="fas fa-shipping-fast"></i> Fast<span>Track</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}" class="active">Home</a></li>
+
+                <li><a href="{{ url_for('about') }}">About Us</a></li>
+                <li><a href="{{ url_for('contact') }}">Contact Us</a></li>
+                {% if session.get('user') %}
+                {% if session.get('role') == 'admin' %}
+                <li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                {% elif session.get('role') == 'employee' %}
+                <li><a href="{{ url_for('employee_dashboard') }}">Dashboard</a></li>
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}" style="color: var(--accent);">Logout</a></li>
+                {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+                {% endif %}
+            </ul>
+            <div class="hamburger">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1>Trust In The Fastest <br>& Most Reliable <br><span style="color: var(--primary);">Delivery
+                    Service</span></h1>
+            <p>Get your packages delivered quickly and safely with FastTrack. Track and locate your items and receive
+                real-time updates.</p>
+
+            <div class="input-group-pill">
+                <input type="text" id="trackingInputHero" placeholder="Enter your Tracking ID...">
+                <button class="btn btn-primary">Track</button>
+            </div>
+        </div>
+        <div class="hero-image">
+            <img src="{{ url_for('static', filename='hero-cheetah.png') }}" alt="Cheetah Delivery Courier">
+        </div>
+    </header>
+
+    <!-- Tracking Result Section -->
+    <div id="trackingResult" class="timeline-container">
+        <h3 style="margin-bottom: 1.5rem; text-align: center;">Shipment Journey</h3>
+        <div class="timeline" id="timelineContent">
+            <!-- Items injected by JS -->
+        </div>
+    </div>
+
+    <section class="section">
+        <h2 class="section-title">Why Choose Us</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <i class="fas fa-bolt feature-icon"></i>
+                <h3>Lightning Fast</h3>
+                <p>Same-day delivery options available for urgent shipments across the globe.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-shield-alt feature-icon"></i>
+                <h3>Secure Handling</h3>
+                <p>Your packages are insured and handled with the utmost care by professionals.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-map-marked-alt feature-icon"></i>
+                <h3>Real-time Tracking</h3>
+                <p>Know exactly where your package is at every step of the journey.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col">
+                <h3>FastTrack</h3>
+                <p>Delivering excellence since 2010. We connect people and businesses through our reliable logistics
+                    network.</p>
+            </div>
+            <div class="footer-col">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('home') }}">Home</a></li>
+                    <li><a href="{{ url_for('about') }}">About</a></li>
+                    <li><a href="{{ url_for('contact') }}">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Contact</h3>
+                <ul class="footer-links">
+                    <li><i class="fas fa-phone"></i> +1 234 567 8900</li>
+                    <li><i class="fas fa-envelope"></i> support@fasttrack.com</li>
+                    <li><i class="fas fa-map-marker-alt"></i> 123 Logistics Way, NY</li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2026 FastTrack Logistics. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

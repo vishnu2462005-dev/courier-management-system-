@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - FastTrack</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            border: 1px solid #f0f0f0;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-5px);
+        }
+
+        .cost-preview {
+            background: var(--light-bg);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            border-left: 4px solid var(--accent);
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('home') }}" class="logo">
+                <i class="fas fa-shipping-fast"></i> Fast<span>Track</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+
+                <li><a href="{{ url_for('employee_dashboard') }}" class="active">Dashboard</a></li>
+                <li><a href="{{ url_for('logout') }}" style="color: var(--accent);">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="section">
+        <h2 class="section-title">Employee Portal <span style="font-size: 1rem; color: var(--text-light);">({{
+                place_name | default('Unknown Location') }})</span></h2>
+
+        <div class="dashboard-grid">
+            <!-- Create Shipment (Merged) -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h3><i class="fas fa-box-open"></i> Create New Shipment</h3>
+                <form id="createShipmentForm" style="margin-top: 1.5rem;">
+
+                    <!-- Sender/Receiver Section -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <div>
+                            <h4 style="margin-bottom: 1rem; color: var(--accent);">Sender Details</h4>
+                            <div class="form-group">
+                                <label class="form-label">Sender Name</label>
+                                <input type="text" name="sender" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Sender Mobile</label>
+                                <input type="tel" name="sender_mobile" class="form-input" pattern="[0-9]{10}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Sender Address (Origin)</label>
+                                <input type="text" name="sender_address" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">From State</label>
+                                <input type="text" id="fromState" name="from_state" class="form-input"
+                                    placeholder="e.g. Tamil Nadu" required>
+                            </div>
+                            <!-- Hidden From City, derived from current location or address if possible? 
+                                  For now, let's add an explicit City field for accurate calculation -->
+                            <div class="form-group">
+                                <label class="form-label">From City</label>
+                                <input type="text" id="fromCity" name="from_city" class="form-input"
+                                    value="{{ place_name.split(' ')[0] if place_name else 'Chennai' }}" required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 style="margin-bottom: 1rem; color: var(--accent);">Receiver Details</h4>
+                            <div class="form-group">
+                                <label class="form-label">Receiver Name</label>
+                                <input type="text" name="receiver" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Receiver Mobile</label>
+                                <input type="tel" name="receiver_mobile" class="form-input" pattern="[0-9]{10}"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Receiver Address</label>
+                                <input type="text" name="receiver_address" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">To State</label>
+                                <input type="text" id="toState" name="to_state" class="form-input"
+                                    placeholder="e.g. Karnataka" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">To City</label>
+                                <input type="text" id="toCity" name="to_city" class="form-input"
+                                    placeholder="e.g. Bangalore" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr style="margin: 2rem 0; border: 0; border-top: 1px solid #e2e8f0;">
+
+                    <!-- Package & Cost Section -->
+                    <h4 style="margin-bottom: 1rem; color: var(--accent);">Package & Cost</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Weight (kg)</label>
+                            <input type="number" id="weight" name="weight" class="form-input" step="0.1" min="0.1"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Length (cm)</label>
+                            <input type="number" id="length" name="length" class="form-input" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Width (cm)</label>
+                            <input type="number" id="width" name="width" class="form-input" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Height (cm)</label>
+                            <input type="number" id="height" name="height" class="form-input" min="1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="form-label">Service Type</label>
+                        <div style="display: flex; gap: 2rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="service_type" value="normal" checked
+                                    onchange="calculateCost()"> Normal
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="service_type" value="express" onchange="calculateCost()">
+                                Express (+30%)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1rem; display: flex; gap: 1rem; align-items: center;">
+                        <button type="button" class="btn" style="background: #e2e8f0; color: #334155;"
+                            onclick="calculateCost()">
+                            <i class="fas fa-sync"></i> Calculate Cost
+                        </button>
+                    </div>
+
+                    <div id="costPreview" class="cost-preview">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                            <span>Total Estimated Cost:</span>
+                            <span id="previewTotal" style="color: var(--primary); font-size: 1.25rem;">₹0.00</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem;">
+                            <span id="previewDetails">Base: ₹0 + GST: ₹0</span> | Zone: <span id="previewZone"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="form-label">Custom Tracking ID (Optional)</label>
+                        <input type="text" name="custom_id" class="form-input" placeholder="Auto-generated if empty">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 2rem;">
+                        Create Shipment & Generate Label
+                    </button>
+                    <div id="newTrackingId"
+                        style="margin-top: 1rem; font-weight: bold; color: var(--accent); text-align: center;"></div>
+                </form>
+            </div>
+
+            <!-- Update Location -->
+            <div class="card">
+                <h3><i class="fas fa-map-marker-alt"></i> Update Location/Status</h3>
+                <form id="updateShipmentForm" style="margin-top: 1.5rem;">
+                    <div class="form-group">
+                        <label class="form-label">Tracking ID</label>
+                        <input type="text" name="tracking_id" class="form-input" placeholder="e.g., 1234567890"
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current Place</label>
+                        <input type="text" name="location" class="form-input" placeholder="e.g., Chennai Hub" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Status</label>
+                        <select name="status" class="form-input" required>
+                            <option value="" disabled selected>Select New Status</option>
+                            <option value="In Transit">In Transit</option>
+                            <option value="Picked Up">Picked Up</option>
+                            <option value="Out for Delivery">Out for Delivery</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Delayed">Delayed</option>
+                            <option value="Returned">Returned</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Update Shipment</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <script src="{{ url_for('static', filename='notifications.js') }}"></script>
+    <script>
+        let currentCostSummary = null;
+
+        function calculateCost() {
+            // Inputs
+            const fromCity = document.getElementById('fromCity').value.trim().toLowerCase();
+            const fromState = document.getElementById('fromState').value.trim().toLowerCase();
+            const toCity = document.getElementById('toCity').value.trim().toLowerCase();
+            const toState = document.getElementById('toState').value.trim().toLowerCase();
+            const weight = parseFloat(document.getElementById('weight').value) || 0;
+            const l = parseFloat(document.getElementById('length').value) || 0;
+            const w = parseFloat(document.getElementById('width').value) || 0;
+            const h = parseFloat(document.getElementById('height').value) || 0;
+
+            if (!fromCity || !toCity || weight <= 0) {
+                // Don't error, just return if not enough info
+                return;
+            }
+
+            const type = document.querySelector('input[name="service_type"]:checked').value;
+
+            // Calculations
+            const volWeight = (l * w * h) / 5000;
+            const chargeableWeight = Math.max(weight, volWeight);
+
+            // Zone Logic
+            let zone = 'national';
+            const metros = ['mumbai', 'delhi', 'bangalore', 'chennai', 'kolkata', 'hyderabad', 'ahmedabad', 'pune'];
+
+            if (fromCity === toCity) {
+                zone = 'local';
+            } else if (fromState === toState && fromState !== '') { // Ensure state is filled
+                zone = 'zonal';
+            } else if (metros.includes(fromCity) && metros.includes(toCity)) {
+                zone = 'metro';
+            } else {
+                zone = 'national';
+            }
+
+            // Rates
+            const rates = { 'local': 50, 'zonal': 80, 'metro': 120, 'national': 180 };
+            let ratePerKg = rates[zone];
+
+            if (type === 'express') ratePerKg *= 1.30;
+
+            const baseCharge = chargeableWeight * ratePerKg;
+            const gst = baseCharge * 0.18;
+            const total = baseCharge + gst;
+
+            // Update UI
+            document.getElementById('costPreview').style.display = 'block';
+            document.getElementById('previewTotal').innerText = '₹' + total.toFixed(2);
+            document.getElementById('previewDetails').innerText = `Base: ₹${baseCharge.toFixed(2)} + GST: ₹${gst.toFixed(2)} (Weight: ${chargeableWeight.toFixed(2)}kg)`;
+            document.getElementById('previewZone').innerText = zone.toUpperCase();
+
+            // Store for submission
+            currentCostSummary = {
+                base: baseCharge,
+                gst: gst,
+                total: total,
+                zone: zone,
+                chargeable_weight: chargeableWeight
+            };
+        }
+
+        // Auto-calculate on input blur
+        const calcInputs = ['weight', 'length', 'width', 'height', 'fromCity', 'toCity', 'fromState', 'toState'];
+        calcInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('blur', calculateCost);
+        });
+
+        // Create Shipment
+        document.getElementById('createShipmentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // Ensure cost is calculated
+            calculateCost();
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            // Add current place as origin fallback if not in form
+            data.location = "{{ place_name | default('Chennai Hub') }}";
+
+            if (currentCostSummary) {
+                data.cost_summary = currentCostSummary;
+            }
+
+            try {
+                const res = await fetch('/api/shipment/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    document.getElementById('newTrackingId').innerText = `Tracking ID: ${result.tracking_id}`;
+                    notify.success(`Shipment Created! ID: ${result.tracking_id}`);
+                    e.target.reset();
+                    document.getElementById('costPreview').style.display = 'none';
+                    currentCostSummary = null;
+                } else {
+                    notify.error('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error(error);
+                notify.error('Failed to create shipment');
+            }
+        });
+
+        // Update Shipment (Same as before)
+        document.getElementById('updateShipmentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const res = await fetch('/api/shipment/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    notify.success('Shipment Updated Successfully!');
+                    e.target.reset();
+                } else {
+                    notify.error('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error(error);
+                notify.error('Failed to update shipment');
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - FastTrack</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('home') }}" class="logo">
+                <i class="fas fa-shipping-fast"></i> Fast<span>Track</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+
+                <li><a href="{{ url_for('admin_dashboard') }}" class="active">Dashboard</a></li>
+                <li><a href="{{ url_for('logout') }}" style="color: var(--accent);">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="section">
+        <h2 class="section-title">Admin Dashboard
+            <a href="{{ url_for('employee_dashboard') }}" class="btn btn-primary"
+                style="font-size: 1rem; margin-left: 1rem; padding: 0.5rem 1rem;">
+                <i class="fas fa-arrow-right"></i> Go to Operations
+            </a>
+        </h2>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>Total Shipments</h3>
+                <p class="h1" style="font-size: 3rem; color: var(--primary);">{{ total_shipments }}</p>
+            </div>
+            <div class="feature-card">
+                <h3>Active Employees</h3>
+                <p class="h1" style="font-size: 3rem; color: var(--primary);">{{ total_employees }}</p>
+            </div>
+        </div>
+
+        <!-- Add Employee Section -->
+        <div
+            style="margin-top: 3rem; background: var(--white); padding: 2rem; border-radius: 1rem; box-shadow: var(--shadow-md);">
+            <h3><i class="fas fa-user-plus"></i> Add New Employee</h3>
+            <form id="createEmployeeForm"
+                style="margin-top: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="username" class="form-input" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Password</label>
+                    <input type="text" name="password" class="form-input" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Assigned Place</label>
+                    <input type="text" name="place" class="form-input" placeholder="e.g., Chennai Hub" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </form>
+        </div>
+
+        <!-- Manage Employees Section -->
+        <div style="margin-top: 3rem;">
+            <h3>Manage Employees</h3>
+            <div
+                style="overflow-x: auto; margin-top: 1rem; background: white; padding: 1rem; border-radius: 0.5rem; box-shadow: var(--shadow-sm);">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; background: var(--light-bg);">
+                            <th style="padding: 1rem;">Username</th>
+                            <th style="padding: 1rem;">Place</th>
+                            <th style="padding: 1rem;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if employees %}
+                        {% for emp in employees %}
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 1rem;">{{ emp.username }}</td>
+                            <td style="padding: 1rem;">{{ emp.place }}</td>
+                            <td style="padding: 1rem;">
+                                <button class="btn btn-danger" onclick="deleteEmployee('{{ emp.username }}')"
+                                    style="background-color: #ef4444; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.25rem; cursor: pointer;">
+                                    <i class="fas fa-trash"></i> Remove
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="3" style="padding: 1rem; text-align: center;">No employees found.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <script>
+            async function deleteEmployee(username) {
+                if (!confirm(`Are you sure you want to remove employee "${username}"?`)) return;
+
+                try {
+                    const res = await fetch('/api/employee/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username })
+                    });
+                    const result = await res.json();
+
+                    if (res.ok) {
+                        alert('Employee removed successfully');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + result.error);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('Failed to remove employee');
+                }
+            }
+        </script>
+
+        <!-- Script moved to bottom -->
+
+        <div style="margin-top: 3rem;">
+            <h3>Search Shipments</h3>
+            <div class="card" style="margin-top: 1rem; padding: 1.5rem;">
+                <form id="adminSearchForm" style="display: flex; gap: 1rem;">
+                    <input type="text" name="query" class="form-input"
+                        placeholder="Enter Shipment ID or User Mobile Number" required style="flex: 1;">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+                </form>
+                <div id="searchResults" style="margin-top: 1rem;"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 3rem;">
+            <h3>Latest shipments</h3>
+            <!-- Placeholder for shipment table -->
+            <div
+                style="overflow-x: auto; margin-top: 1rem; background: white; padding: 1rem; border-radius: 0.5rem; box-shadow: var(--shadow-sm);">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; background: var(--light-bg);">
+                            <th style="padding: 1rem;">Tracking ID</th>
+                            <th style="padding: 1rem;">Status</th>
+                            <th style="padding: 1rem;">Place</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if shipments %}
+                        {% for shipment in shipments %}
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 1rem;">{{ shipment.tracking_id }}</td>
+                            <td style="padding: 1rem;">{{ shipment.status }}</td>
+                            <td style="padding: 1rem;">{{ shipment.location }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="3" style="padding: 1rem; text-align: center;">No shipments found</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <script src="{{ url_for('static', filename='notifications.js') }}"></script>
+    <script>
+        document.getElementById('createEmployeeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const res = await fetch('/api/employee/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    notify.success('Employee Account Created Successfully!');
+                    e.target.reset();
+                    setTimeout(() => location.reload(), 2000); // Wait for toast to be seen
+                } else {
+                    notify.error('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error(error);
+                notify.error('Failed to create employee account');
+            }
+        });
+
+        // Admin Search Handler
+        document.getElementById('adminSearchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = e.target.query.value;
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '<p>Searching...</p>';
+
+            try {
+                const res = await fetch('/api/admin/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const results = await res.json();
+
+                if (res.ok) {
+                    if (results.length === 0) {
+                        resultsDiv.innerHTML = '<p style="color: var(--text-light);">No shipments found matching your query.</p>';
+                        return;
+                    }
+
+                    let html = `
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                            <thead>
+                                <tr style="text-align: left; background: var(--light-bg);">
+                                    <th style="padding: 0.5rem;">ID</th>
+                                    <th style="padding: 0.5rem;">Sender</th>
+                                    <th style="padding: 0.5rem;">Receiver</th>
+                                    <th style="padding: 0.5rem;">Status</th>
+                                    <th style="padding: 0.5rem;">Info</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    results.forEach(shipment => {
+                        html += `
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 0.5rem;">${shipment.tracking_id}</td>
+                                <td style="padding: 0.5rem;">${shipment.sender}<br><small>${shipment.sender_mobile || ''}</small></td>
+                                <td style="padding: 0.5rem;">${shipment.receiver}<br><small>${shipment.receiver_mobile || ''}</small></td>
+                                <td style="padding: 0.5rem;">${shipment.status}</td>
+                                    <td style="padding: 0.5rem;">
+                                        <a href="/api/track/${shipment.tracking_id}" target="_blank" 
+                                        style="color:var(--primary); text-decoration:underline;">
+                                        View JSON
+                                        </a>
+                                    </td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<p style="color: red;">Error: ${results.error}</p>`;
+                }
+            } catch (error) {
+                console.error(error);
+                resultsDiv.innerHTML = '<p style="color: red;">Search failed.</p>';
+            }
+        });
+    </script>
+</body>
+
+</html>

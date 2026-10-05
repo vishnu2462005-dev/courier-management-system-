@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost Calculator - FastTrack</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .calculator-container {
+            max-width: 800px;
+            margin: 3rem auto;
+            background: var(--white);
+            padding: 3rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid #f0f0f0;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .result-box {
+            background: var(--light-bg);
+            padding: 2rem;
+            border-radius: var(--radius-md);
+            margin-top: 2rem;
+            display: none;
+            border-left: 5px solid var(--accent);
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .result-total {
+            border-top: 1px solid #cbd5e1;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary);
+        }
+
+        .zone-badge {
+            background: var(--primary);
+            color: var(--white);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('home') }}" class="logo">
+                <i class="fas fa-shipping-fast"></i> Fast<span>Track</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+                <li><a href="{{ url_for('calculator') }}" class="active">Calculator</a></li>
+                <li><a href="{{ url_for('about') }}">About Us</a></li>
+                <li><a href="{{ url_for('contact') }}">Contact Us</a></li>
+                {% if session.get('user') %}
+                {% if session.get('role') == 'admin' %}
+                <li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                {% elif session.get('role') == 'employee' %}
+                <li><a href="{{ url_for('employee_dashboard') }}">Dashboard</a></li>
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}" style="color: var(--accent);">Logout</a></li>
+                {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="calculator-container">
+        <h2 class="section-title" style="margin-bottom: 2rem;">Shipping Cost Calculator</h2>
+        <form id="calculatorForm">
+            <h4 style="margin-bottom: 1rem; color: var(--text-dark);">Origin & Destination</h4>
+            <div class="calc-grid">
+                <div class="form-group">
+                    <label class="form-label">From City</label>
+                    <input type="text" id="fromCity" class="form-input" placeholder="e.g. Chennai" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">From State</label>
+                    <input type="text" id="fromState" class="form-input" placeholder="e.g. Tamil Nadu" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">To City</label>
+                    <input type="text" id="toCity" class="form-input" placeholder="e.g. Bangalore" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">To State</label>
+                    <input type="text" id="toState" class="form-input" placeholder="e.g. Karnataka" required>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 1.5rem; margin-bottom: 1rem; color: var(--text-dark);">Package Details</h4>
+            <div class="calc-grid">
+                <div class="form-group">
+                    <label class="form-label">Actual Weight (kg)</label>
+                    <input type="number" id="weight" class="form-input" step="0.1" min="0.1" placeholder="e.g. 5.0"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Length (cm)</label>
+                    <input type="number" id="length" class="form-input" min="1" placeholder="L" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Width (cm)</label>
+                    <input type="number" id="width" class="form-input" min="1" placeholder="W" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Height (cm)</label>
+                    <input type="number" id="height" class="form-input" min="1" placeholder="H" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+                <label class="form-label">Delivery Type</label>
+                <div style="display: flex; gap: 2rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="deliveryType" value="normal" checked> Normal
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="deliveryType" value="express"> Express (+30%)
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Calculate Cost</button>
+        </form>
+
+        <div id="resultBox" class="result-box">
+            <h3 style="margin-bottom: 1rem;">Estimation Result <span id="zoneDisplay" class="zone-badge"></span></h3>
+            <div class="result-row">
+                <span>Route:</span>
+                <span id="routeDisplay" style="font-weight: 600;"></span>
+            </div>
+            <div class="result-row">
+                <span>Volumetric Weight:</span>
+                <span id="volWeightDisplay">0 kg</span>
+            </div>
+            <div class="result-row">
+                <span>Chargeable Weight:</span>
+                <span id="chargeWeightDisplay">0 kg</span>
+            </div>
+            <div class="result-row">
+                <span>Base Charge:</span>
+                <span id="baseChargeDisplay">₹0</span>
+            </div>
+            <div class="result-row">
+                <span>GST (18%):</span>
+                <span id="gstDisplay">₹0</span>
+            </div>
+            <div class="result-total result-row">
+                <span>Total Amount:</span>
+                <span id="totalDisplay">₹0</span>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col">
+                <h3>FastTrack</h3>
+                <p>Delivering excellence since 2010. We connect people and businesses through our reliable logistics
+                    network.</p>
+            </div>
+            <div class="footer-col">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('home') }}">Home</a></li>
+                    <li><a href="{{ url_for('calculator') }}">Calculator</a></li>
+                    <li><a href="{{ url_for('about') }}">About</a></li>
+                    <li><a href="{{ url_for('contact') }}">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Contact</h3>
+                <ul class="footer-links">
+                    <li><i class="fas fa-phone"></i> +1 234 567 8900</li>
+                    <li><i class="fas fa-envelope"></i> support@fasttrack.com</li>
+                    <li><i class="fas fa-map-marker-alt"></i> 123 Logistics Way, NY</li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2026 FastTrack Logistics. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('calculatorForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Inputs (Raw for display)
+            const fromCityRaw = document.getElementById('fromCity').value.trim();
+            const fromStateRaw = document.getElementById('fromState').value.trim();
+            const toCityRaw = document.getElementById('toCity').value.trim();
+            const toStateRaw = document.getElementById('toState').value.trim();
+
+            // Lowercase for logic
+            const fromCity = fromCityRaw.toLowerCase();
+            const fromState = fromStateRaw.toLowerCase();
+            const toCity = toCityRaw.toLowerCase();
+            const toState = toStateRaw.toLowerCase();
+
+            const weight = parseFloat(document.getElementById('weight').value);
+            const l = parseFloat(document.getElementById('length').value);
+            const w = parseFloat(document.getElementById('width').value);
+            const h = parseFloat(document.getElementById('height').value);
+            const type = document.querySelector('input[name="deliveryType"]:checked').value;
+
+            // Calculations
+            const volWeight = (l * w * h) / 5000;
+            const chargeableWeight = Math.max(weight, volWeight);
+
+            // Zone Identification
+            let zone = 'national';
+            const metros = ['mumbai', 'delhi', 'bangalore', 'chennai', 'kolkata', 'hyderabad', 'ahmedabad', 'pune'];
+
+            if (fromCity === toCity) {
+                zone = 'local';
+            } else if (fromState === toState) {
+                zone = 'zonal';
+            } else if (metros.includes(fromCity) && metros.includes(toCity)) {
+                zone = 'metro';
+            } else {
+                zone = 'national';
+            }
+
+            // Rates
+            const rates = {
+                'local': 50,
+                'zonal': 80,
+                'metro': 120,
+                'national': 180
+            };
+
+            let ratePerKg = rates[zone];
+
+            // Express Markup
+            if (type === 'express') {
+                ratePerKg *= 1.30; // +30%
+            }
+
+            const baseCharge = chargeableWeight * ratePerKg;
+            const gst = baseCharge * 0.18;
+            const total = baseCharge + gst;
+
+            // Display
+            document.getElementById('zoneDisplay').innerText = zone.toUpperCase();
+            document.getElementById('routeDisplay').innerText = `${fromCityRaw} ➝ ${toCityRaw}`;
+            document.getElementById('volWeightDisplay').innerText = volWeight.toFixed(2) + ' kg';
+            document.getElementById('chargeWeightDisplay').innerText = chargeableWeight.toFixed(2) + ' kg';
+            document.getElementById('baseChargeDisplay').innerText = '₹' + baseCharge.toFixed(2);
+            document.getElementById('gstDisplay').innerText = '₹' + gst.toFixed(2);
+            document.getElementById('totalDisplay').innerText = '₹' + total.toFixed(2);
+
+            document.getElementById('resultBox').style.display = 'block';
+
+            // Clear Inputs
+            e.target.reset();
+        });
+    </script>
+</body>
+
+</html>
